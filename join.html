@@ -191,7 +191,12 @@ addEventListener('keyup',e=>{keys[e.code]=0;if(KMAP[e.code]&&!(e.code==='KeyL'&&
 function kstick(){if(TOUCH&&ptStick)return;let x=0,y=0;if(keys.KeyA||keys.ArrowLeft)x=-1;if(keys.KeyD||keys.ArrowRight)x=1;if(keys.KeyW||keys.ArrowUp)y=-1;if(keys.KeyS||keys.ArrowDown)y=1;stick={x,y}}
 setInterval(()=>{let yaw=0,z=0,dy=0;if(keys.KeyZ)yaw+=.06;if(keys.KeyC)yaw-=.06;if(keys.KeyQ)z=.97;if(keys.KeyX)z=1.03;if(keys.PageUp)dy=4;if(keys.PageDown)dy=-4;if(yaw||z||dy)send({t:'cam',yaw,z,dy})},33);
 // mouse drag on the picture turns the camera (computer)
-{let md=null;$('vid').addEventListener('pointerdown',e=>{if(e.pointerType==='mouse')md=[e.clientX,e.clientY]});addEventListener('pointermove',e=>{if(!md)return;send({t:'cam',dx:e.clientX-md[0],dy:e.clientY-md[1]});md=[e.clientX,e.clientY]});addEventListener('pointerup',()=>{md=null});
+{let md=null,m0=null,drag=false,hold=null,mt=0;const MB={2:'h',3:'b',4:'g'};
+ // mouse: left click = HIT (hold = charged attack), drag = camera, right click = HEAVY, side buttons = BLOCK / DODGE, wheel = zoom
+ $('vid').addEventListener('pointerdown',e=>{if(e.pointerType!=='mouse')return;if(MB[e.button]){e.preventDefault();press(MB[e.button]);return}if(e.button!==0)return;md=m0=[e.clientX,e.clientY];drag=false;mt=performance.now();clearTimeout(hold);hold=setTimeout(()=>{if(md&&!drag){press('a');hold='on'}},260)});
+ addEventListener('pointermove',e=>{if(!md)return;if(!drag&&Math.hypot(e.clientX-m0[0],e.clientY-m0[1])>7){drag=true;clearTimeout(hold);if(hold==='on'){release('a');hold=null}}if(!drag)return;send({t:'cam',dx:e.clientX-md[0],dy:e.clientY-md[1]});md=[e.clientX,e.clientY]});
+ addEventListener('pointerup',e=>{if(e.pointerType==='mouse'&&MB[e.button]){release(MB[e.button]);return}if(!md)return;const wasHold=hold==='on';clearTimeout(hold);hold=null;if(wasHold)release('a');else if(!drag){press('a');setTimeout(()=>release('a'),60)}md=null});
+ addEventListener('mouseup',e=>{if(e.button===3||e.button===4)e.preventDefault()});addEventListener('auxclick',e=>{if(e.button===3||e.button===4)e.preventDefault()});
  addEventListener('wheel',e=>{if(!$('jplay').classList.contains('hide'))send({t:'cam',z:e.deltaY>0?1.08:.93})},{passive:true})}
 // touch controls (same layout as the game)
 const ctl=$('jctl');let CT=null,ptStick=null;const PT=new Map();
