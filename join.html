@@ -127,6 +127,7 @@ button.plain{background:rgba(20,28,60,.85);color:#fff;border-color:rgba(242,199,
 .netu{font:700 15px Georgia;color:#9ad8ff;word-break:break-all;background:rgba(20,28,60,.85);border-radius:10px;padding:8px;margin:4px auto;max-width:560px;user-select:all;-webkit-user-select:all}
 body.remote .hbar.two.p0{left:50%}body.remote #hbar1{display:none!important}body.remote .shopov.half0{right:0}body.remote .shopov.half1,body.remote .ov.forguest{display:none!important}
 #gl,#hud{left:0}
+#hcam{position:fixed;right:10px;top:112px;grid-template-columns:repeat(2,46px);gap:7px;z-index:6}#hcam button{width:46px;height:46px;border-radius:50%;border:2px solid rgba(242,199,92,.7);background:rgba(10,14,34,.6);color:#ffd24a;font:900 20px Georgia,serif;padding:0;touch-action:none;user-select:none;-webkit-user-select:none}#hcam button.on{background:rgba(242,199,92,.55);color:#000}#hcam small{grid-column:1/3;text-align:center;font:700 10px Georgia;color:#cfe8ff;text-shadow:0 1px 2px #000}
 
 html,body{margin:0;height:100%;overflow:hidden;background:#05060f;color:#fff;touch-action:none}
 #vid{position:fixed;inset:0;width:100%;height:100%;object-fit:contain;background:#000}
@@ -139,15 +140,18 @@ html,body{margin:0;height:100%;overflow:hidden;background:#05060f;color:#fff;tou
 #jsnd{position:fixed;top:50px;left:50%;transform:translateX(-50%);z-index:9}
 #jctl{position:fixed;inset:0;display:none;touch-action:none;z-index:5}
 #o_hbar1{position:fixed;left:50%;bottom:8px;transform:translateX(-50%);display:none;gap:4px;z-index:7}#o_hbar1.on{display:flex}
-#o_shop1,#o_bagov,#o_mvov{z-index:11}
+.mir{position:relative;z-index:11;display:none}
+#jcam{position:fixed;right:10px;top:112px;display:grid;grid-template-columns:repeat(2,50px);gap:8px;z-index:8}
+#jcam button{width:50px;height:50px;border-radius:50%;border:2px solid rgba(242,199,92,.7);background:rgba(10,14,34,.6);color:#ffd24a;font:900 22px Georgia,serif;padding:0;touch-action:none;user-select:none;-webkit-user-select:none}
+#jcam button.on{background:rgba(242,199,92,.55);color:#000}#jcam small{grid-column:1/3;text-align:center;font:700 10px Georgia;color:#cfe8ff;text-shadow:0 1px 2px #000}
 @media (pointer:coarse){#o_hbar1{left:43%;gap:3px;bottom:6px}}
 #o_toast{position:fixed;left:50%;top:40%;transform:translate(-50%,-50%) scale(.9);z-index:30;background:rgba(10,20,40,.92);border:2px solid #7fffb0;color:#fff;font:900 16px Cinzel,serif;padding:14px 22px;border-radius:14px;opacity:0;pointer-events:none;transition:.25s;text-align:center}#o_toast.on{opacity:1;transform:translate(-50%,-50%) scale(1)}</style></head><body>
 <video id="vid" playsinline autoplay></video>
 <div id="jstart" class="jscr"><h1>JOIN YOUR BROTHER</h1><p class="hint">Your brother pressed <b>2 DEVICES → HOST</b> on his device.<br>Type the 4 letters you see on his screen:</p><input id="jcode" maxlength="4" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="ABCD"><p id="jerr"></p><button class="gold" id="jgo">▶ JOIN THE GAME</button><p class="hint" style="margin-top:14px">Both devices should be on the same Wi-Fi.</p></div>
 <div id="jwait" class="jscr hide"><h1>SONS OF OLYMPUS</h1><p id="jmsg">Connecting...</p></div>
-<div id="jplay" class="hide"><div id="jtop"><button id="jbag">🎒 BAG</button><button id="jmoves">🥋 MOVES</button><button id="jfs">⛶ FULL SCREEN</button></div><div id="jidle" class="hide"></div><div id="jctl"></div><div id="o_hbar1" class="hbar"></div></div>
+<div id="jplay" class="hide"><div id="jtop"><button id="jbag">🎒 BAG</button><button id="jmoves">🥋 MOVES</button><button id="jpause">❚❚ PAUSE</button><button id="jfs">⛶ FULL SCREEN</button></div><div id="jcam"><small>CAMERA</small><button id="jcl">⟲</button><button id="jcr">⟳</button><button id="jtu">▲</button><button id="jtd">▼</button><button id="jzi">＋</button><button id="jzo">－</button></div><div id="jidle" class="hide"></div><div id="jctl"></div><div id="o_hbar1" class="hbar"></div></div>
 <button id="jsnd" class="gold hide">🔊 TAP FOR SOUND</button>
-<div id="o_shop1" class="hide"></div><div id="o_bagov" class="hide"></div><div id="o_mvov" class="hide"></div><div id="o_toast" class="toast"></div>
+<div id="o_toast" class="toast"></div>
 <script src="peerjs.min.js"></script><script>// Sons of Olympus - second device ("JOIN"): shows the live picture of your half of the game and sends your buttons to the host device.
 (()=>{const $=id=>document.getElementById(id);const TOUCH=matchMedia('(pointer:coarse)').matches||'ontouchstart'in window;
 let peer=null,conn=null,code='',held={},stick={x:0,y:0},keys={},sendT=0,lastSent='';
@@ -157,26 +161,36 @@ const status=(s)=>{$('jmsg').textContent=s};
 // ---------- join screen
 $('jcode').addEventListener('input',e=>{e.target.value=e.target.value.toUpperCase().replace(/[^A-Z]/g,'').slice(0,4)});
 try{const c=new URLSearchParams(location.search).get('code')||location.hash.slice(1);if(c&&/^[A-Za-z]{4}$/.test(c))$('jcode').value=c.toUpperCase()}catch(e){}
-$('jgo').onclick=()=>{code=$('jcode').value.trim().toUpperCase();if(code.length!==4){$('jerr').textContent='Type the 4 letters you see on your brother\'s screen.';return}try{const v=$('vid');v.muted=false;v.play().catch(()=>{})}catch(e){}connect()};
+const AUD=document.createElement('audio');AUD.autoplay=true;AUD.setAttribute('playsinline','');document.body.appendChild(AUD);
+function sndOn(){try{if(AUD.srcObject&&AUD.paused){AUD.muted=false;AUD.play().then(()=>$('jsnd').classList.add('hide')).catch(()=>{if(!$('jplay').classList.contains('hide'))$('jsnd').classList.remove('hide')})}}catch(e){}}
+['pointerdown','touchend','keydown','click'].forEach(t=>addEventListener(t,sndOn,{capture:true,passive:true}));
+$('jgo').onclick=()=>{code=$('jcode').value.trim().toUpperCase();if(code.length!==4){$('jerr').textContent='Type the 4 letters you see on your brother\'s screen.';return}try{AUD.play().catch(()=>{})}catch(e){}connect()};
 function connect(){if(typeof Peer==='undefined'){$('jerr').textContent='Could not load the connection part. Check the internet and reload.';return}
  show('jwait');status('Connecting to code '+code+'...');try{peer&&peer.destroy()}catch(e){}
  peer=new Peer(CFG);peer.on('open',()=>{conn=peer.connect('soo-'+code,{reliable:true});conn.on('open',()=>{status('Connected! Waiting for the picture...');send({t:'hello',asp:innerWidth/innerHeight,dev:TOUCH?'touch':'pc'})});
    conn.on('data',onData);conn.on('close',lost);conn.on('error',lost)});
- peer.on('call',call=>{call.answer();call.on('stream',st=>{const v=$('vid');v.srcObject=st;v.play().catch(()=>{v.muted=true;v.play().catch(()=>{});$('jsnd').classList.remove('hide')})})});
+ peer.on('call',call=>{call.answer();call.on('stream',st=>{const v=$('vid');v.muted=true;v.srcObject=new MediaStream(st.getVideoTracks());v.play().catch(()=>{});const at=st.getAudioTracks();if(at.length){AUD.srcObject=new MediaStream(at);sndOn()}})});
  peer.on('error',e=>{if(e.type==='peer-unavailable'){show('jstart');$('jerr').textContent='No game found with code '+code+'. Check the letters, and that your brother pressed HOST.'}else{show('jstart');$('jerr').textContent='Connection problem ('+e.type+'). Make sure you are on Wi-Fi and try again.'}})}
 function lost(){if(!conn)return;conn=null;show('jwait');status('Lost the connection... reconnecting');setTimeout(()=>{if(!conn)connect()},1500)}
-$('jsnd').onclick=()=>{const v=$('vid');v.muted=false;v.play().catch(()=>{});$('jsnd').classList.add('hide')};
+$('jsnd').onclick=()=>{sndOn()};
 function send(m){try{conn&&conn.open&&conn.send(m)}catch(e){}}
 // ---------- messages from the host
-const OV=['shop1','bagov','mvov'];
+const WIN={};
+function winEl(id,h){let el=WIN[id];if(!el){el=document.createElement('div');el.className='mir';el.id='o_'+id;document.body.appendChild(el);WIN[id]=el;
+  el.addEventListener('click',e=>{const root=el.firstElementChild;if(!root||!root.contains(e.target))return;e.preventDefault();const p=[];let n=e.target;while(n&&n!==root){p.unshift([...n.parentNode.children].indexOf(n));n=n.parentNode}send({t:'click',o:el.dataset.h,p})})}
+ if(h)el.dataset.h=h;return el}
 function onData(d){if(!d)return;if(d.t==='busy'){show('jstart');$('jerr').textContent='Someone else already joined this game.';return}
  if(d.t==='st'){if(d.play){show('jplay');$('jidle').classList.toggle('hide',!d.paused);$('jidle').textContent=d.paused?'PAUSED':''}else{show('jwait');status(d.msg?'Connected! '+d.msg+' (on your brother\'s screen)':'Connected! Waiting for the game to start...')}return}
- if(d.t==='ov'){const el=$('o_'+d.id);if(!el)return;if(d.id==='toast'){el.textContent=d.html;el.classList.toggle('on',!!d.html);return}el.innerHTML=d.html||'';el.classList.toggle('hide',!d.html);
-  if(d.id==='bagov'||d.id==='mvov'||d.id==='shop1'){el.className=d.html?(d.id==='shop1'?'shopov':'ov'):'hide'}if(d.id==='hbar1'){el.className=d.html?'hbar on':'hbar'}}}
-// clicks inside mirrored windows go back to the host
-for(const id of OV){$('o_'+id).addEventListener('click',e=>{const root=$('o_'+id);let el=e.target.closest('button,.bs,.hs,[data-b],[data-s],[data-t],[data-k],[data-c],.shx');if(!el||!root.contains(el))return;e.preventDefault();const p=[];let n=el;while(n&&n!==root){p.unshift([...n.parentNode.children].indexOf(n));n=n.parentNode}send({t:'click',o:id,p})})}
+ if(d.t==='ov'){if(d.id.startsWith('w_')){const el=winEl(d.id,d.h);const ib=el.firstElementChild;const sc=ib?[ib,...ib.querySelectorAll('*')].map(q=>q.scrollTop):[];el.innerHTML=d.html||'';el.style.display=d.html?'block':'none';
+   // keep the scroll position of long windows (bag, moves) when they update
+   const nb=el.firstElementChild;if(nb&&sc.length){[nb,...nb.querySelectorAll('*')].forEach((q,k)=>{if(sc[k])q.scrollTop=sc[k]})}return}
+  const el=$('o_'+d.id);if(!el)return;if(d.id==='toast'){el.textContent=d.html;el.classList.toggle('on',!!d.html);return}el.innerHTML=d.html||'';if(d.id==='hbar1'){el.className=d.html?'hbar on':'hbar'}}}
 $('o_hbar1').addEventListener('pointerdown',e=>{const t=e.target.closest('.hs');if(!t)return;e.preventDefault();if(t.dataset.i==='bag')send({t:'ui',a:'bag'});else send({t:'hb',i:t.dataset.i})});
-$('jbag').onclick=()=>send({t:'ui',a:'bag'});$('jmoves').onclick=()=>send({t:'ui',a:'moves'});
+$('jbag').onclick=()=>send({t:'ui',a:'bag'});$('jmoves').onclick=()=>send({t:'ui',a:'moves'});$('jpause').onclick=()=>send({t:'ui',a:'pause'});
+// camera buttons (hold to keep turning / zooming) - and you can also drag on the picture or pinch with 2 fingers
+{let ct=null;const CB={jcl:{yaw:.05},jcr:{yaw:-.05},jzi:{z:.96},jzo:{z:1.04},jtu:{dy:4},jtd:{dy:-4}};
+ for(const id in CB){const el=$(id);if(!el)continue;const go=e=>{e.preventDefault();e.stopPropagation();el.classList.add('on');send(Object.assign({t:'cam'},CB[id]));clearInterval(ct);ct=setInterval(()=>send(Object.assign({t:'cam'},CB[id])),45)};const end=e=>{el.classList.remove('on');clearInterval(ct);ct=null};
+  el.addEventListener('pointerdown',go);['pointerup','pointercancel','pointerleave'].forEach(t=>el.addEventListener(t,end))}}
 $('jfs').onclick=()=>{try{(document.documentElement.requestFullscreen||document.documentElement.webkitRequestFullscreen).call(document.documentElement)}catch(e){}};
 // ---------- input -> host
 const BT=[['a','HIT'],['h','HEAVY'],['g','DODGE'],['j','JUMP'],['p','POWER'],['m','RIDE'],['b','BLOCK']];
